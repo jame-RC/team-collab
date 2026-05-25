@@ -25,6 +25,13 @@ def _utcnow() -> datetime:
 # ---------------------------------------------------------------------------
 
 
+class OutputType(str, Enum):
+    MARKDOWN = "markdown"
+    CODE = "code"
+    MIXED = "mixed"
+    SLIDES = "slides"
+
+
 class TaskStatus(str, Enum):
     PENDING = "pending"
     CLAIMED = "claimed"

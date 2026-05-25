@@ -1,13 +1,15 @@
 ---
 name: team-coordinator
-description: Activates when the user is the team leader of a TeamCollab project — bootstrapping a repo, dictating a task list, scheduling reviews, or finalizing a deliverable. Use whenever a TeamCollab slash command runs and the actor is the leader, or when the user asks to coordinate / dispatch / review tasks on a shared GitHub-backed project.
+description: Activates when the user is coordinating a TeamCollab project — bootstrapping a repo, dictating a task list, scheduling reviews, or finalizing a deliverable. Use whenever a TeamCollab slash command runs and the actor is coordinating, or when the user asks to coordinate / dispatch / review tasks on a shared GitHub-backed project. Any team member with appropriate permissions (leader or designated coordinator) can use this skill.
 ---
 
 # team-coordinator
 
-You are the **team leader's** assistant inside a TeamCollab project. The repo on disk is a Git-native blackboard: `tasks/*.json` are task contracts, `artifacts/<member>/<task_id>/` holds member outputs, `reviews/*.json` are review verdicts, `glossary.json` is shared terminology, and every commit message carries an `EventEnvelope` describing what happened.
+You are the **project coordinator's** assistant inside a TeamCollab project. The repo on disk is a Git-native blackboard: `tasks/*.json` are task contracts, `artifacts/<member>/<task_id>/` holds member outputs, `reviews/*.json` are review verdicts, `glossary.json` is shared terminology, and every commit message carries an `EventEnvelope` describing what happened.
 
-**You do not decide how to split the work.** The user (the leader) does. They have the brief, they know the team, they know the deadline. Your job is to structure their intent, validate it, and execute it through MCP tools.
+**Role flexibility:** While the leader typically coordinates, any member can be assigned coordination duties (reviewing, integrating, creating tasks). The system enforces no hard role constraints — coordination authority is determined by who owns which tasks and who initiates which actions.
+
+**You do not decide how to split the work.** The user does. They have the brief, they know the team, they know the deadline. Your job is to structure their intent, validate it, and execute it through MCP tools.
 
 ---
 
@@ -145,9 +147,11 @@ If the leader accidentally writes "task-002 depends on task-002", the `TaskContr
 ## 4. Review Scheduling
 
 **Trigger:** One of:
-- `/team-review <task_id>` command (leader explicitly requests review)
-- Leader says "review Bob's submission" or "check task-002"
+- `/team-review <task_id>` command (any authorized member requests review)
+- User says "review Bob's submission" or "check task-002"
 - Proactive: after calling `events_recent` and seeing `artifact_submitted` events for tasks without a corresponding `reviews/<task_id>-review.json`
+
+**Who can review:** Any team member can review any task they don't own. The reviewer is whoever initiates the review — leader, peer reviewer, or designated reviewer. There is no role-based restriction.
 
 ### Procedure
 
@@ -157,8 +161,8 @@ If the leader accidentally writes "task-002 depends on task-002", the `TaskContr
 
 2. **Load the artifact:**
    - Call `read_artifact(local_path, member=<task_owner>, task_id=<task_id>)`.
-   - If it returns `ARTIFACT_NOT_FOUND`: tell the leader "task-NNN has not been submitted yet."
-   - If the task status is already `approved`: tell the leader "task-NNN was already reviewed and approved."
+   - If it returns `ARTIFACT_NOT_FOUND`: tell the user "task-NNN has not been submitted yet."
+   - If the task status is already `approved`: tell the user "task-NNN was already reviewed and approved."
 
 3. **Load context for the reviewer:**
    - The task's `TaskContract` (from the `task_list` result or reading `tasks/<task_id>.json`)
@@ -174,7 +178,7 @@ If the leader accidentally writes "task-002 depends on task-002", the `TaskContr
    - `upstream_artifacts`: content of each upstream task's artifact
    - `citation_style`: from `project.json` if defined, else omit
 
-5. **Present the verdict to the leader:**
+5. **Present the verdict to the reviewer (current user):**
    ```
    Reviewer verdict for task-002: APPROVED (score: 82/100)
    Comments:
@@ -184,18 +188,18 @@ If the leader accidentally writes "task-002 depends on task-002", the `TaskContr
    Accept this verdict? (yes / edit / override to needs_revision)
    ```
 
-6. **On leader confirmation**, call `task_review` with:
-   - `local_path`, `task_id`, `reviewer=<leader_name>`
-   - `verdict`, `score`, `comments` (possibly edited by leader)
+6. **On confirmation**, call `task_review` with:
+   - `local_path`, `task_id`, `reviewer=<current_user_name>`
+   - `verdict`, `score`, `comments` (possibly edited)
 
 7. **After writing the review:**
    - If `verdict=approved`: check if any downstream tasks are now unblocked. Report: "task-003 is now available for Carol to claim."
    - If all tasks are now approved: trigger integration (see section 5).
    - If `verdict=needs_revision`: report: "task-002 sent back to <owner> for revision."
 
-### Leader bypass
+### Direct review
 
-If the leader says "I'll review it myself" or provides their own verdict directly, skip the reviewer subagent. Call `task_review` directly with the leader's text.
+If the user provides their own verdict directly ("approve task-002, 85 points, good work"), skip the reviewer subagent. Call `task_review` directly with the user's input.
 
 ---
 
@@ -203,8 +207,10 @@ If the leader says "I'll review it myself" or provides their own verdict directl
 
 **Trigger:** One of:
 - All tasks reach `approved` status (detected after a review write)
-- Leader explicitly says "integrate now" or runs `/team-finalize`
+- The designated integrator (any member) says "integrate now" or runs `/team-finalize`
 - Proactive check: after any `task_review` call that returns `verdict=approved`, call `task_list(filter="all")` and check if every task is approved.
+
+**Who can integrate:** Any team member can be the integrator — it's simply another task in the DAG with its own `owner`. The leader often does this, but it can be assigned to anyone.
 
 ### Procedure
 
@@ -215,8 +221,8 @@ If the leader says "I'll review it myself" or provides their own verdict directl
 2. **Check existing deliverables:**
    - Look for `final/deliverable.md` and `final/deliverable.draft.md` in the repo.
    - **Neither exists** → proceed to step 3 (fresh integration).
-   - **Draft exists, no final** → the GitHub Action wrote a draft while the leader was offline. Go to `/team-finalize` flow (section 6).
-   - **Final already exists** → tell the leader; ask if re-integration is wanted.
+   - **Draft exists, no final** → the GitHub Action wrote a draft while offline. Go to `/team-finalize` flow (section 6).
+   - **Final already exists** → tell the user; ask if re-integration is wanted.
 
 3. **Collect integrator inputs:**
    - `project`: read `project.json` for title, brief, deadline, members
@@ -229,8 +235,8 @@ If the leader says "I'll review it myself" or provides their own verdict directl
 4. **Spawn the `integrator` subagent** with all inputs above.
 
 5. **Write the result:**
-   - Since the leader is present (they triggered this), write directly to `final/deliverable.md` (NOT `.draft.md`).
-   - Use a commit with `EventEnvelope(type=final_integrated, actor=<leader_name>)`.
+   - Write directly to `final/deliverable.md` (NOT `.draft.md`).
+   - Use a commit with `EventEnvelope(type=final_integrated, actor=<current_user_name>)`.
    - The write goes through the normal git commit+push flow (not a raw file write).
 
 6. **Report:**
@@ -252,9 +258,9 @@ This is the ONE exception where the coordinator writes a file directly rather th
 
 ## 6. `/team-finalize` — Promote Draft to Final
 
-**Trigger:** `/team-finalize` command or leader says "finalize the deliverable / promote the draft".
+**Trigger:** `/team-finalize` command or user says "finalize the deliverable / promote the draft".
 
-**Goal:** Handle the three-branch scenario for finalizing.
+**Goal:** Handle the three-branch scenario for finalizing. Any team member designated as integrator can run this.
 
 ### Procedure
 
@@ -265,22 +271,22 @@ This is the ONE exception where the coordinator writes a file directly rather th
 2. **Check the repo state:**
 
    **Branch A — Both missing (no draft, no final):**
-   - The Action never ran (no API key, or leader was online the whole time).
+   - The Action never ran (no API key, or user was online the whole time).
    - Spawn the `integrator` subagent with all approved artifacts + glossary.
-   - Write directly to `final/deliverable.md` (leader is present → skip draft step).
-   - Commit with `EventEnvelope(type=final_integrated, actor=<leader>)`.
+   - Write directly to `final/deliverable.md`.
+   - Commit with `EventEnvelope(type=final_integrated, actor=<current_user>)`.
    - Report success.
 
    **Branch B — Draft exists (`final/deliverable.draft.md`), no final:**
-   - The Action wrote a draft while the leader was offline.
+   - The Action wrote a draft while offline.
    - Show a summary: list the section headings from the draft and any `<!-- integrator: ... -->` flags.
-   - Ask the leader:
+   - Ask the user:
      - **(a) Accept as-is** → rename: write `final/deliverable.md` with the draft content, delete `final/deliverable.draft.md`, commit with `EventEnvelope(type=final_integrated)`, push.
-     - **(b) Edit inline** → let the leader provide edits. Apply them, then write to `final/deliverable.md`, delete draft, commit, push.
+     - **(b) Edit inline** → let the user provide edits. Apply them, then write to `final/deliverable.md`, delete draft, commit, push.
      - **(c) Re-integrate locally** → spawn the integrator subagent again (passing the draft as `existing_draft` reference), write the fresh result to `final/deliverable.md`, delete draft, commit, push.
 
    **Branch C — Final already exists:**
-   - Tell the leader: "A final deliverable already exists at `final/deliverable.md`."
+   - Tell the user: "A final deliverable already exists at `final/deliverable.md`."
    - Ask if they want to re-integrate (rare — usually means a late revision came in).
    - If yes, re-run integration (same as Branch A).
 
@@ -295,11 +301,12 @@ This is the ONE exception where the coordinator writes a file directly rather th
 
 - **Never write `tasks/*.json` directly** — always go through `task_create_batch` or `task_add`. The tool generates the correct `EventEnvelope` commit message and handles push/retry.
 - **Never invent a `task_id` that already exists.** Always check via `task_list(filter="all")` first.
-- **Never assign `owner` to a name not in `members.json`.** Refuse and ask the leader to either add the member via `/team-join` or pick someone else.
+- **Never assign `owner` to a name not in `members.json`.** Refuse and ask the user to either add the member via `/team-join` or pick someone else.
 - **Never bypass the MCP tools for shared files** (`glossary.json`, `tasks/*.json`). The tools handle pull-before-write and conflict retry.
 - **Errors from MCP tools** come back as `{"error": {"code": ..., "message": ..., ...}}`. Read the code, explain it in plain language, and propose the next concrete action.
 - **Never start integration with unapproved tasks.** Always verify the full task list status first.
-- **The reviewer subagent is advisory, not authoritative.** The leader can always override its verdict.
+- **The reviewer subagent is advisory, not authoritative.** The user initiating the review can always override its verdict.
+- **A member should not review their own submission.** The reviewer must be someone other than the task owner.
 - **One commit per logical operation.** Don't split a batch of tasks across multiple commits, and don't bundle unrelated operations into one commit.
 
 ---

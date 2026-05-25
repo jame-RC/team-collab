@@ -8,6 +8,18 @@ from __future__ import annotations
 from pathlib import Path
 
 
+def find_project_root(start: Path) -> Path | None:
+    """Walk up from *start* looking for a ``.teamcollab/members.json`` marker.
+
+    Returns the project root directory or None if not found.
+    """
+    current = start.resolve()
+    for parent in [current, *current.parents]:
+        if (parent / ".teamcollab" / "members.json").exists():
+            return parent
+    return None
+
+
 def project_json(root: Path) -> Path:
     return root / "project.json"
 

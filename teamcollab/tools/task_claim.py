@@ -19,6 +19,7 @@ from pathlib import Path
 from teamcollab.contracts import EventEnvelope, EventType, TaskContract, TaskStatus
 from teamcollab.git_ops import GitRepo, OfflineError
 from teamcollab.tools import _paths
+from teamcollab.tools._changelog import log_claim
 from teamcollab.tools._io import read_model, write_model
 from teamcollab.tools.task_list import _load_all, _waiting_for
 
@@ -77,7 +78,9 @@ def task_claim(
         }
     )
     write_model(task_path, task)
-    repo.add([task_path])
+
+    changelog_path = log_claim(root, me, task_id, task.title)
+    repo.add([task_path, changelog_path])
 
     env = EventEnvelope(type=EventType.TASK_CLAIMED, actor=me, task_id=task_id)
     sha = repo.commit(env.dump(f"{me} claimed {task_id}"))

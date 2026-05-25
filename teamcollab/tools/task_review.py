@@ -1,4 +1,9 @@
-"""``task_review``: leader (or Action runner) posts a verdict for a submitted task.
+"""``task_review``: any authorized team member posts a verdict for a submitted task.
+
+The reviewer can be the leader, a designated peer reviewer, or any member
+with review privileges. There is no hard role constraint — the caller decides
+who reviews each task (typically set by the task's review workflow or by the
+coordinator skill).
 
 Writes ``reviews/<task_id>-review.json`` and flips the task status:
 
@@ -23,6 +28,7 @@ from teamcollab.contracts import (
 )
 from teamcollab.git_ops import GitRepo, OfflineError
 from teamcollab.tools import _paths
+from teamcollab.tools._changelog import log_review
 from teamcollab.tools._io import read_model, write_model
 
 
@@ -83,7 +89,13 @@ def task_review(
     task = task.model_copy(update={"status": _VERDICT_TO_STATUS[verdict]})
     write_model(task_path, task)
 
-    repo.add([review_path, task_path])
+    comment_summary = parsed_comments[0].message if parsed_comments else None
+    changelog_path = log_review(
+        root, reviewer, task_id, task.title,
+        verdict=verdict.value, score=score,
+        comment_summary=comment_summary,
+    )
+    repo.add([review_path, task_path, changelog_path])
     env = EventEnvelope(type=EventType.REVIEW_POSTED, actor=reviewer, task_id=task_id)
     sha = repo.commit(env.dump(f"{reviewer} reviewed {task_id}: {verdict.value}"))
 
