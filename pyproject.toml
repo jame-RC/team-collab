@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "teamcollab"
+version = "0.1.0"
+description = "Git-native asynchronous multi-agent collaboration plugin for Claude Code"
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
+dependencies = [
+    "mcp>=1.0",
+    "gitpython>=3.1",
+    "pydantic>=2.5",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+embed = ["fastembed>=0.3"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5"]
+
+[project.scripts]
+teamcollab-server = "teamcollab.server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["teamcollab*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

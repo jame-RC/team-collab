@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# TeamCollab runtime state
+.teamcollab/cache/
+.teamcollab/pending_pushes.log
+.teamcollab/errors.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Simulation output
+sim_demo/campus_energy_project/

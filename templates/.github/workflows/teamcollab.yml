@@ -1,0 +1,59 @@
+name: teamcollab
+on:
+  push:
+    paths:
+      - 'artifacts/**'
+      - 'reviews/**'
+      - 'tasks/**'
+    branches: [main]
+
+jobs:
+  dispatch:
+    if: ${{ vars.TEAMCOLLAB_ENABLED != 'false' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY || secrets.ANTHROPIC_API_KEY }}
+      LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+      LLM_MODEL: ${{ vars.LLM_MODEL }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install anthropic pyyaml pydantic
+
+      - name: Parse latest commit envelope
+        id: parse
+        run: |
+          MSG=$(git log -1 --format='%B')
+          if echo "$MSG" | grep -q '^\[teamcollab\]'; then
+            TYPE=$(echo "$MSG" | head -1 | sed 's/\[teamcollab\] //')
+            echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+            echo "has_envelope=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_envelope=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run reviewer
+        if: steps.parse.outputs.has_envelope == 'true' && steps.parse.outputs.type == 'artifact_submitted'
+        run: python scripts/run_reviewer.py
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+
+      - name: Run integrator
+        if: steps.parse.outputs.has_envelope == 'true' && steps.parse.outputs.type == 'review_posted'
+        run: python scripts/run_integrator.py
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}

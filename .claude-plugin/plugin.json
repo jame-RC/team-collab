@@ -1,0 +1,36 @@
+{
+  "name": "team-collab",
+  "version": "0.1.0",
+  "description": "Git-native asynchronous multi-agent collaboration for school group AI assignments. Turns a GitHub repo into a shared blackboard so multiple Claude Code instances can work offline, push when online, and converge without a central server.",
+  "author": {
+    "name": "TeamCollab"
+  },
+  "homepage": "https://github.com/example/team-collab",
+  "mcpServers": {
+    "teamcollab": {
+      "command": "python",
+      "args": ["-m", "teamcollab.server"],
+      "description": "Local MCP stdio server wrapping git operations as 14 tools (team_init, task_*, glossary_*, events_recent, sync_now, search_blackboard, read_artifact)."
+    }
+  },
+  "commands": [
+    "commands/team-init.md",
+    "commands/team-tasks.md",
+    "commands/team-add-task.md",
+    "commands/team-join.md",
+    "commands/team-sync.md",
+    "commands/team-claim.md",
+    "commands/team-submit.md",
+    "commands/team-status.md",
+    "commands/team-review.md",
+    "commands/team-finalize.md"
+  ],
+  "skills": [
+    "skills/team-coordinator.md",
+    "skills/team-member.md"
+  ],
+  "agents": [
+    "agents/reviewer.md",
+    "agents/integrator.md"
+  ]
+}
