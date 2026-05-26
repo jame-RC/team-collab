@@ -5,35 +5,5 @@
   "author": {
     "name": "TeamCollab"
   },
-  "homepage": "https://github.com/jame-RC/team-collab",
-  "mcpServers": {
-    "teamcollab": {
-      "command": "python",
-      "args": ["-m", "teamcollab.server"],
-      "description": "Local MCP stdio server providing 16 tools: team_init, team_join, task_*, glossary_*, events_recent, sync_now, search_blackboard, read_artifact, get_project_context, generate_slides."
-    }
-  },
-  "commands": [
-    "commands/team.md",
-    "commands/team-init.md",
-    "commands/team-tasks.md",
-    "commands/team-add-task.md",
-    "commands/team-join.md",
-    "commands/team-sync.md",
-    "commands/team-claim.md",
-    "commands/team-submit.md",
-    "commands/team-status.md",
-    "commands/team-review.md",
-    "commands/team-finalize.md"
-  ],
-  "skills": [
-    "skills/team.md",
-    "skills/team-bootstrap.md",
-    "skills/team-coordinator.md",
-    "skills/team-member.md"
-  ],
-  "agents": [
-    "agents/reviewer.md",
-    "agents/integrator.md"
-  ]
+  "homepage": "https://github.com/jame-RC/team-collab"
 }

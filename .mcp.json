@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "teamcollab": {
+      "command": "python",
+      "args": ["-m", "teamcollab.server"]
+    }
+  }
+}
