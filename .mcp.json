@@ -1,8 +1,12 @@
 {
   "mcpServers": {
     "teamcollab": {
-      "command": "python",
-      "args": ["-m", "teamcollab.server"]
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/jame-RC/team-collab",
+        "teamcollab-server"
+      ]
     }
   }
 }

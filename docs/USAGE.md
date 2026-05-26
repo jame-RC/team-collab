@@ -6,19 +6,25 @@
 
 ## 0. 一次性安装（每个人都要做一次）
 
+**完全不需要装 Python**。只需要：
+
+**Step 1：装 uv**（一条命令搞定）
+
 ```bash
-# 1. 克隆插件仓库到本地任意位置
-git clone https://github.com/jame-RC/team-collab.git
-cd team-collab
+# Mac / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# 2. 安装 Python 包（让 MCP server 能跑起来）
-pip install -e .
+# Windows PowerShell
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
-# 3. 启动 Claude Code，注册 marketplace 并安装插件
+**Step 2：在 Claude Code 里安装插件**
+
+```bash
 claude
 ```
 
-在 Claude Code 里：
+进入 Claude Code 后：
 
 ```
 /plugin marketplace add jame-RC/team-collab
@@ -27,7 +33,8 @@ claude
 
 退出 Claude Code，再重新进一次。输入 `/team` 能看到提示就装好了。
 
-> 需要本地有 `git`、`gh`（GitHub CLI）、`python ≥ 3.10`。第一次用 `gh` 要 `gh auth login` 登录。
+> 第一次用某个工具时，uvx 会自动从 GitHub 拉代码 + 装 Python + 装依赖（一次约 10-30 秒），之后秒启。
+> 还需要本地有 `git`、`gh`（GitHub CLI）。第一次用 `gh` 要 `gh auth login` 登录。
 
 ---
 
