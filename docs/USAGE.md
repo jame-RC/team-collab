@@ -46,7 +46,21 @@ claude
 gh repo create my-team-project --public --confirm
 ```
 
-### 1.2 在本地建一个空文件夹，进 Claude Code
+### 1.2 把队员加成 collaborator（重要！）
+
+队员后面要 push 提交，必须先有写权限。**在把仓库地址发出去之前**做这一步：
+
+```bash
+gh repo edit --add-collaborator bob
+gh repo edit --add-collaborator carol
+```
+
+或者网页操作：仓库 Settings → Collaborators → Add people → 输入队员的 GitHub 用户名（不是邮箱、不是真名，是 `github.com/xxx` 里的 xxx）。
+
+> ⚠️ 队员收到邀请邮件后**必须点击接受**，否则仍是只读权限。可以让队员第一次 `gh auth login` 之后跑 `gh repo list` 确认能看到这个仓库。
+> 漏了这步的话，队员"提交"时会卡在 push 403，到时候再加权限要队员重新拉一遍，体验很差。
+
+### 1.3 在本地建一个空文件夹，进 Claude Code
 
 ```bash
 mkdir my-team-project
@@ -54,7 +68,7 @@ cd my-team-project
 claude
 ```
 
-### 1.3 对 Claude Code 说
+### 1.4 对 Claude Code 说
 
 > 新建项目，仓库地址 https://github.com/你的用户名/my-team-project，我是组长，叫 alice
 
@@ -63,19 +77,19 @@ Claude 会引导你：
 - 队员名单和分工
 - 把作业要求贴进去（PDF/Word 内容粘贴即可，或拖文件）
 
-### 1.4 分配任务（DAG）
+### 1.5 分配任务（DAG）
 
 > 帮我把作业拆成任务，bob 负责数据调研，carol 负责文献综述，最后我来整合写报告
 
 Claude 会创建 `tasks/*.json`，并自动 push 到 GitHub。
 
-### 1.5 等队员提交后评审
+### 1.6 等队员提交后评审
 
 > 看看有什么待评审的
 
 > 评审 task-001，通过
 
-### 1.6 整合 / 定稿
+### 1.7 整合 / 定稿
 
 > 我领整合任务
 
