@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "team-collab",
+  "owner": {
+    "name": "TeamCollab"
+  },
+  "metadata": {
+    "description": "Git-native asynchronous multi-agent collaboration plugin for Claude Code",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "team-collab",
+      "description": "Turn a Git repo into a shared blackboard for multiple Claude Code instances. 16 MCP tools, 11 slash commands, conversational entry via /team.",
+      "source": "./",
+      "strict": false
+    }
+  ]
+}
